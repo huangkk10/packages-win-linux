@@ -1,0 +1,13 @@
+# SSL 憑證（不進版本控制）
+nexus/nginx/certs/*.crt
+nexus/nginx/certs/*.key
+nexus/nginx/certs/*.pem
+
+# Nexus 環境變數（含密碼）
+nexus/docker/.env
+
+# 大型二進位套件（不進版本控制，改由 Nexus 管理）
+packages/windows/*.nupkg
+packages/linux/*.tar.gz
+packages/linux/*.deb
+packages/linux/*.rpm

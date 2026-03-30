@@ -1,0 +1,40 @@
+services:
+  nexus:
+    image: sonatype/nexus3:3.77.0
+    container_name: nexus
+    expose:
+      - "8081"            # 只對 nginx 開放，不直接對外
+    environment:
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms1g -Xmx2g
+        -XX:MaxDirectMemorySize=2g
+        -Djava.util.prefs.userRoot=/nexus-data/javaprefs
+    volumes:
+      - nexus-data:/nexus-data
+      - /mnt/nas-mdt/Team/PQ1-3/tool/ssd-testkit-nexus:/nexus-nas-blob
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/service/rest/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nexus-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nexus.conf:/etc/nginx/conf.d/nexus.conf:ro
+      - ../nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      nexus:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  nexus-data:
+    driver: local
