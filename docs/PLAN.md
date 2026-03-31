@@ -2,18 +2,18 @@
 
 **目標 Repository：** https://github.com/huangkk10/ssd-testkit (branch: develop)  
 **文件日期：** 2026-03-30  
-**文件狀態：** 進行中（Phase 2）
+**文件狀態：** Phase 2 完成，待進入 Phase 3
 
 | Phase | 狀態 |
 |-------|------|
 | Phase 0 前置準備 | ✅ 完成 |
 | Phase 1 Nexus 伺服器建置 | ✅ 完成（2026-03-30） |
-| Phase 2 Windows Chocolatey 整合 | 🔄 進行中 |
+| Phase 2 Windows Chocolatey 整合 | ✅ 完成（2026-03-30） |
 | Phase 3 Linux 套件管理 | ⬜ 待做 |
 | Phase 4 Python 依賴統一 | ⬜ 待做 |
 | Phase 5 Onboarding | ⬜ 待做 |
 
-**Nexus 伺服器：** https://10.252.170.171  
+**Nexus 伺服器：** https://nexus.internal（10.252.170.171）  
 **Nexus 版本：** Community 3.77.0-08
 
 ---
@@ -58,7 +58,7 @@ bin/chocolatey/
     └── packages.config        # 要安裝的套件清單（XML）
 ```
 
-**目前模式：** `active_source: offline`（本地資料夾）  
+**目前模式：** `active_source: nexus`（Nexus choco-hosted-nas）  
 **已預留：** `sources.config` 中已有 Nexus NuGet Hosted 設定位置（URL 佔位符）  
 **缺少：**
 - Nexus 伺服器尚未建立
@@ -177,7 +177,7 @@ volumes:
 ### Phase 2：Windows Chocolatey 整合（Nexus）
 
 **目標：** 讓 `bootstrap.ps1 -Source nexus` 可正常運作  
-**狀態：** 🔄 進行中
+**狀態：** ✅ 完成（2026-03-30）
 
 #### 2.1 上傳 .nupkg 到 Nexus
 
@@ -207,19 +207,27 @@ bash scripts/upload/upload_nupkg.sh \
 
 腳本流程：
 1. SSH 進 Windows 列出所有 `.nupkg`
-2. `scp` 複製到 Linux 暫存
-3. `curl` 批次 POST 到 Nexus `choco-hosted`
+2. `scp` 複製到 Linux 暫存（`/tmp/nupkg_upload/`）
+3. `curl` 批次 POST 到 Nexus `choco-hosted-nas`
 4. 清除暫存
+
+**實際執行結果（2026-03-30）：** 11 個 .nupkg 全部上傳至 `choco-hosted-nas`（HTTP:204）
 
 #### 2.2 修改 `sources.config`（ssd-testkit 內）
 
 ```yaml
-# 將佔位符替換為實際 Nexus URL
 nexus:
   type: nuget_v3
-  url: "https://10.252.170.171/repository/choco-hosted/"
+  url: "https://nexus.internal/repository/choco-hosted-nas/"
   api_key_env: "NEXUS_API_KEY"
 ```
+
+> **注意事項（2026-03-30 發現）：**
+> - Nexus 使用 self-signed SSL（CN=nexus.internal），Windows 機器需要：
+>   1. 匯入 `nexus/nginx/certs/nexus.crt` 到 `Cert:\LocalMachine\Root`
+>   2. 在 `C:\Windows\System32\drivers\etc\hosts` 加入 `10.252.170.171 nexus.internal`
+> - `install_packages.ps1` 需在 choco args 加入 `--version $ver`，否則觸發 Nexus 已廢棄的 NuGet V2 OData `IsLatestVersion` 查詢（HTTP:400）
+> - Chocolatey 不需要 API Key 即可讀取（匿名讀取已開啟）
 
 #### 2.3 修改 `environment.config`（或透過 bootstrap 參數切換）
 
@@ -242,10 +250,13 @@ $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("developer:Dev
 ```
 
 **驗收條件：**
-- [ ] 所有 .nupkg 上傳到 `choco-hosted-nas` 可在 Web UI Browse 看到
-- [ ] `bootstrap.ps1 -Source nexus` 在全新 Windows 機器可完整執行
-- [ ] 所有套件從 Nexus 下載安裝成功
-- [ ] 不需要公網連線
+- [x] 所有 .nupkg 上傳到 `choco-hosted-nas` 可在 Web UI Browse 看到
+- [x] `bootstrap.ps1 -Source nexus` 執行成功（Total: 8, Success: 8, Failed: 0）
+- [x] 所有套件從 Nexus 下載安裝成功
+- [x] 不需要公網連線
+- [x] `environment.config` `active_source: nexus`（預設走 Nexus）
+- [x] `NEXUS_API_KEY` 設定完成（Machine scope）
+- [x] `nx-developer` 角色加入 `choco-hosted-nas` 和 `raw-linux-tools-nas` 讀取權限
 
 #### 2.5 NAS Blob Store（大型檔案儲存）
 
@@ -276,11 +287,13 @@ $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("developer:Dev
 8. 舊的 `choco-hosted`（local disk）可保留作 fallback
 
 **驗收條件：**
-- [ ] NAS 開機自動掛載正常
-- [ ] Nexus blob store `nas-blob` 建立完成
-- [ ] `choco-hosted-nas` 可上傳並瀏覽套件
-- [ ] NAS 路徑下可看到實際的 blob 檔案
-- [ ] `bootstrap.ps1 -Source nexus` 能從 `choco-hosted-nas` 下載
+- [x] NAS 開機自動掛載正常（`/etc/fstab`，`dir_mode=0777`）
+- [x] Nexus blob store `nas-blob` 建立完成
+- [x] `choco-hosted-nas` 可上傳並瀏覽套件
+- [x] NAS `ssd-testkit-nexus/` 下可看到實際的 blob 檔案
+- [x] `ssd-testkit-source/windows/installers/` 備份 7.8GB（robocopy）
+- [x] `ssd-testkit-source/windows/nupkg/` 備份 11 個 .nupkg
+- [x] `nexus-data` 每日 cron 備份至 `ssd-testkit-backup/`（02:00）
 
 ---
 

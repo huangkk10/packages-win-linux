@@ -115,6 +115,22 @@ robocopy C:\ssd-testkit\bin\installers\SmiCli\v20260401A `
 net use Z: /delete
 ```
 
+**Step B2：壓縮成 .zip 並備份到 NAS**
+
+```powershell
+# 在 Windows 直接執行
+net use Z: \\10.250.0.1\mdt /user:mdt "p@ssw0rd"
+Compress-Archive -Path "C:\ssd-testkit\bin\installers\SmiCli\v20260401A\*" `
+  -DestinationPath "Z:\Team\PQ1-3\tool\ssd-testkit-source\windows\zip\SmiCli-v20260401A.zip" `
+  -Force
+net use Z: /delete
+```
+
+> zip 的用途是**人工備份 / 緊急取用**，不是 choco install 的來源。  
+> 命名規則：`<ToolName>-<Version>.zip`，例如 `SmiCli-v20260401A.zip`。
+
+---
+
 **Step C：建立 Chocolatey 套件定義**
 
 複製現有版本資料夾作為模板：
@@ -206,7 +222,8 @@ git commit -m "chore: upgrade smicli to 2026.4.1 (v20260401A)"
 | # | 動作 | 位置 | 必要？ |
 |---|------|------|--------|
 | A | 放入 installer 檔案到 `bin\installers\` | ssd-testkit repo | ✅ |
-| B | 備份 installer 到 NAS `ssd-testkit-source` | NAS | 建議 |
+| B | 備份 installer 到 NAS `ssd-testkit-source/installers` | NAS | 建議 |
+| B2 | 壓縮成 .zip 備份到 NAS `ssd-testkit-source/zip` | NAS | 建議 |
 | C | 新建 nuspec + chocolateyInstall.ps1 | ssd-testkit repo | ✅ |
 | D | `choco pack` 打包成 .nupkg | Windows 或 Linux | ✅ |
 | E | 上傳 .nupkg 到 Nexus `choco-hosted-nas` | Linux curl | ✅ |
@@ -528,10 +545,15 @@ sudo chmod +x /usr/local/bin/nexus-backup.sh
 ├── ssd-testkit-backup/       ← nexus-data volume 每日快照（保留 14 天）
 │   ├── nexus-data-20260330.tar.gz
 │   └── nexus-data-20260331.tar.gz
-└── ssd-testkit-source/       ← 原始 .nupkg 靜態備份（每次新增工具更新）
-    └── nupkg/
-        ├── burnin.10.2.1004.nupkg
-        └── ...
+└── ssd-testkit-source/       ← 原始檔靜態備份（每次新增工具更新）
+    └── windows/
+        ├── installers/       ← 原始安裝資料夾（照搬 bin\installers\）
+        ├── zip/              ← 壓縮版備份（供手動下載 / 緊急取用）
+        │   ├── SmiCli-v20260213C.zip
+        │   └── ...
+        └── nupkg/            ← Chocolatey .nupkg 備份
+            ├── burnin.10.2.1004.nupkg
+            └── ...
 ```
 
 ---
