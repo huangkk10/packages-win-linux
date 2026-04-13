@@ -36,4 +36,22 @@
 
   choco search --source "https://nexus.internal/repository/choco-hosted/index.json" --all-versions
 
+----------------------------------------------------------------
+【移除 Chocolatey 及 Nexus 設定】
+
+  以系統管理員開啟 PowerShell，依序執行：
+
+  # 1. 移除 Chocolatey
+  Remove-Item -Recurse -Force "C:\ProgramData\chocolatey"
+  $p = [Environment]::GetEnvironmentVariable('Path','Machine')
+  $p = ($p -split ';' | Where-Object { $_ -notlike '*chocolatey*' }) -join ';'
+  [Environment]::SetEnvironmentVariable('Path', $p, 'Machine')
+
+  # 2. 移除 hosts 裡的 nexus.internal
+  $h = "$env:SystemRoot\System32\drivers\etc\hosts"
+  (Get-Content $h) | Where-Object { $_ -notmatch 'nexus\.internal' } | Set-Content $h
+
+  # 3. 移除 Nexus CA 憑證
+  Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -match 'nexus' } | Remove-Item
+
 ================================================================

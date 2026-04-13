@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows Tool Installation Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #222; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 32px; }
+  header h1 { font-size: 1.4rem; font-weight: 600; }
+  header p { font-size: 0.85rem; color: #aac4e0; margin-top: 4px; }
+  .container { max-width: 960px; margin: 28px auto; padding: 0 16px; }
+  section { background: #fff; border-radius: 8px; padding: 24px 28px; margin-bottom: 20px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  section h2 { font-size: 1rem; font-weight: 700; color: #1a3a5c; border-left: 4px solid #2e7ad1;
+               padding-left: 10px; margin-bottom: 16px; }
+  p, li { font-size: 0.9rem; line-height: 1.6; color: #444; }
+  .cmd-block { position: relative; background: #1e1e1e; color: #d4d4d4; border-radius: 6px;
+               padding: 14px 48px 14px 16px; font-family: 'Consolas', monospace; font-size: 0.82rem;
+               margin: 8px 0; white-space: pre-wrap; word-break: break-all; }
+  .copy-btn { position: absolute; top: 8px; right: 8px; background: #2e7ad1; color: #fff;
+              border: none; border-radius: 4px; padding: 4px 10px; font-size: 0.75rem;
+              cursor: pointer; transition: background .15s; }
+  .copy-btn:hover { background: #1a5aab; }
+  .copy-btn.copied { background: #2e8b57; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { background: #f4f7fb; color: #1a3a5c; text-align: left; padding: 10px 12px;
+       font-weight: 600; border-bottom: 2px solid #d0dcea; }
+  td { padding: 9px 12px; border-bottom: 1px solid #edf0f4; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  td .cmd-block { margin: 0; padding: 6px 44px 6px 10px; font-size: 0.78rem; }
+  .note { background: #fff8e1; border-left: 4px solid #f5a623; padding: 10px 14px;
+          border-radius: 4px; font-size: 0.85rem; margin-bottom: 14px; }
+  .step { display: flex; align-items: baseline; gap: 8px; margin: 6px 0; }
+  .step-num { background: #2e7ad1; color: #fff; border-radius: 50%; width: 20px; height: 20px;
+              display: inline-flex; align-items: center; justify-content: center;
+              font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+  .uninstall-step { margin: 10px 0; }
+  .uninstall-step p { font-size: 0.82rem; color: #666; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Windows Tool Installation Guide (Internal Network)</h1>
+  <p>Nexus: https://10.252.170.171 &nbsp;|&nbsp; Updated: 2026-04-13</p>
+</header>
+
+<div class="container">
+
+  <!-- Bootstrap -->
+  <section>
+    <h2>First Time Setup — Install Chocolatey</h2>
+    <p style="margin-bottom:12px">Open PowerShell <strong>as Administrator</strong> and run the following one-liner:</p>
+    <div class="cmd-block">Set-ExecutionPolicy Bypass -Scope Process -Force; iwr http://10.252.170.171/b -UseBasicParsing | iex<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+    <p style="margin-top:12px; font-size:0.82rem; color:#666;">
+      Automatically: writes hosts entry → imports Nexus CA cert → installs Chocolatey → registers Nexus source
+    </p>
+  </section>
+
+  <!-- Tool List -->
+  <section>
+    <h2>Available Tools</h2>
+    <div class="note">⚠ <strong>--version is required</strong> for all installs. Nexus 3.77+ dropped NuGet v2 OData auto-search; omitting --version returns HTTP 400.</div>
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Version</th><th>Install Command</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Windows ADK</td><td>26100.0.0</td><td><div class="cmd-block">choco install windows-adk --version 26100.0.0 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>BurnIn Test</td><td>10.2.1004</td><td><div class="cmd-block">choco install burnin --version 10.2.1004 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>CrystalDiskInfo</td><td>8.17.13</td><td><div class="cmd-block">choco install cdi --version 8.17.13 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>Git</td><td>2.44.0</td><td><div class="cmd-block">choco install git --version 2.44.0 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>SmiCli</td><td>2026.2.13</td><td><div class="cmd-block">choco install smicli --version 2026.2.13 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>SmiWinTools</td><td>2026.2.13.1</td><td><div class="cmd-block">choco install smiwintools --version 2026.2.13.1 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>PHM</td><td>4.22.0</td><td><div class="cmd-block">choco install phm --version 4.22.0 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>.NET 7 SDK</td><td>7.0.410</td><td><div class="cmd-block">choco install net-7-sdk --version 7.0.410 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+        <tr><td>Playwright Browsers</td><td>1.58.0</td><td><div class="cmd-block">choco install playwright-browsers --version 1.58.0 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div></td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:16px; margin-bottom:6px; font-weight:600; font-size:0.88rem;">Install all tools at once:</p>
+    <div class="cmd-block">choco install windows-adk --version 26100.0.0 burnin --version 10.2.1004 cdi --version 8.17.13 git --version 2.44.0 smicli --version 2026.2.13 smiwintools --version 2026.2.13.1 phm --version 4.22.0 net-7-sdk --version 7.0.410 playwright-browsers --version 1.58.0 -y<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+  </section>
+
+  <!-- Search -->
+  <section>
+    <h2>Query Available Versions</h2>
+    <div class="cmd-block">choco search --source "https://nexus.internal/repository/choco-hosted/index.json" --all-versions<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+  </section>
+
+  <!-- Uninstall -->
+  <section>
+    <h2>Remove Chocolatey &amp; Nexus Settings</h2>
+    <p style="margin-bottom:14px">Open PowerShell <strong>as Administrator</strong> and run each block:</p>
+
+    <div class="uninstall-step">
+      <p>1. Remove Chocolatey</p>
+      <div class="cmd-block">Remove-Item -Recurse -Force "C:\ProgramData\chocolatey"
+$p = [Environment]::GetEnvironmentVariable('Path','Machine')
+$p = ($p -split ';' | Where-Object { $_ -notlike '*chocolatey*' }) -join ';'
+[Environment]::SetEnvironmentVariable('Path', $p, 'Machine')<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+    </div>
+
+    <div class="uninstall-step">
+      <p>2. Remove nexus.internal from hosts</p>
+      <div class="cmd-block">$h = "$env:SystemRoot\System32\drivers\etc\hosts"
+(Get-Content $h) | Where-Object { $_ -notmatch 'nexus\.internal' } | Set-Content $h<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+    </div>
+
+    <div class="uninstall-step">
+      <p>3. Remove Nexus CA certificate</p>
+      <div class="cmd-block">Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -match 'nexus' } | Remove-Item<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+function copyCmd(btn) {
+  const block = btn.parentElement;
+  const text = block.childNodes[0].textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+</script>
+</body>
+</html>

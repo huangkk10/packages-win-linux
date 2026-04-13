@@ -1,9 +1,8 @@
-# b.ps1 — Chocolatey 內網 Bootstrap
-# 用法（以管理員 PowerShell 執行一行）：
+# b.ps1 - Chocolatey Internal Network Bootstrap
+# Usage (run as Administrator in PowerShell):
 #   Set-ExecutionPolicy Bypass -Scope Process -Force; iwr http://10.252.170.171/b -UseBasicParsing | iex
 #
-# 說明：此腳本本身經 HTTP 下載（不含機密）
-#          內部再用 Add-Type 可靠跟過 SSL 驗證，適用 PS5/PS7
+# Note: This script is downloaded via HTTP. SSL bypass is handled internally via Add-Type. Compatible with PS5/PS7.
 
 param(
     [string]$NexusIp   = "10.252.170.171",
@@ -13,10 +12,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# 強制 TLS 1.2（PS5 預設 TLS 1.0，nginx 只接受 TLS 1.2+）
+# Force TLS 1.2 (PS5 defaults to TLS 1.0; nginx requires TLS 1.2+)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# 略過 self-signed SSL 驗證（使用 Add-Type ，相容 PS5 / PS7）
+# Skip self-signed SSL verification (Add-Type method, compatible with PS5/PS7)
 if ($PSVersionTable.PSVersion.Major -ge 6) {
     $PSDefaultParameterValues['Invoke-WebRequest:SkipCertificateCheck'] = $true
     $PSDefaultParameterValues['Invoke-RestMethod:SkipCertificateCheck']  = $true
@@ -34,14 +33,14 @@ public class TrustAllCerts : ICertificatePolicy {
     [Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCerts
 }
 
-# [0/5] 自動寫入 hosts（若尚未存在）
+# [0/5] Add hosts entry if not already present
 $hostsFile  = "$env:SystemRoot\System32\drivers\etc\hosts"
 $hostsEntry = "$NexusIp`t$NexusHost"
 if (-not (Select-String -Path $hostsFile -Pattern ([regex]::Escape($NexusHost)) -Quiet)) {
-    Write-Host "[0/5] 寫入 hosts：$hostsEntry"
+    Write-Host "[0/5] Adding hosts entry: $hostsEntry"
     Add-Content $hostsFile "`n$hostsEntry"
 } else {
-    Write-Host "[0/5] hosts 已有 $NexusHost，略過"
+    Write-Host "[0/5] hosts entry for $NexusHost already exists, skipping"
 }
 
 $NexusUrl   = "https://$NexusIp"
@@ -53,24 +52,24 @@ $certFile   = "$tmp\nexus.crt"
 
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 
-Write-Host "[1/5] 匯入 Nexus CA 憑證..."
-# 憑證經 HTTP 下載（bootstrap 階段尚未信任 CA，需先用 HTTP）
+Write-Host "[1/5] Importing Nexus CA certificate..."
+# Downloaded via HTTP because CA is not yet trusted at this stage
 Invoke-WebRequest "http://$NexusIp/nexus.crt" -OutFile $certFile -UseBasicParsing
 Import-Certificate -FilePath $certFile -CertStoreLocation "Cert:\LocalMachine\Root" | Out-Null
-Write-Host "[1/5] 憑證已匯入 Trusted Root CA"
+Write-Host "[1/5] Certificate imported to Trusted Root CA"
 
-# 注意：Import-Certificate 寫入 Windows 憑證庫，但目前程序的 .NET 不會立即重讀
-# TrustAllCerts 維持生效直到此腳本結束；下次啟動的程序（choco）才會使用憑證庫
+# Note: Import-Certificate writes to the Windows cert store, but the current .NET process
+# won't reload it immediately. TrustAllCerts stays active until this script ends.
 
 $chocoExe = "$env:SystemDrive\ProgramData\chocolatey\bin\choco.exe"
 if (Test-Path $chocoExe) {
-    Write-Host "[2/5] Chocolatey 已安裝，略過"
-    Write-Host "[3/5] 略過"
+    Write-Host "[2/5] Chocolatey already installed, skipping"
+    Write-Host "[3/5] Skipping"
 } else {
-    Write-Host "[2/5] 下載 chocolatey.nupkg ..."
+    Write-Host "[2/5] Downloading chocolatey.nupkg ..."
     Invoke-WebRequest "$base/chocolatey.nupkg" -OutFile $nupkg -UseBasicParsing
 
-    Write-Host "[3/5] 安裝 Chocolatey ..."
+    Write-Host "[3/5] Installing Chocolatey ..."
     $env:ChocolateyInstall = 'C:\ProgramData\chocolatey'
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     if (Test-Path $extractDir) { Remove-Item $extractDir -Recurse -Force }
@@ -78,22 +77,22 @@ if (Test-Path $chocoExe) {
     & "$extractDir\tools\chocolateyInstall.ps1"
 }
 
-# 重新載入 PATH
+# Reload PATH so choco is available in this session
 $env:Path = [System.Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' +
             [System.Environment]::GetEnvironmentVariable('Path', 'User')
 
-Write-Host "[4/5] 登錄 Nexus 為 choco 來源 ..."
+Write-Host "[4/5] Registering Nexus as choco source ..."
 choco source add `
     --name="nexus" `
     --source="https://$NexusHost/repository/choco-hosted/index.json" `
     --priority=1 -y
 choco source disable --name="chocolatey" 2>$null
 
-Write-Host "[5/5] 完成！"
+Write-Host "[5/5] Done!"
 Write-Host ""
-Write-Host "注意：安裝時必須指定 --version（Nexus 3.77+ 不支援 NuGet v2 OData 自動搜尋）"
+Write-Host "NOTE: --version is required for all installs (Nexus 3.77+ dropped NuGet v2 OData auto-search)"
 Write-Host ""
-Write-Host "安裝工具："
+Write-Host "Install tools:"
 Write-Host "  choco install burnin            --version 10.2.1004   -y"
 Write-Host "  choco install cdi               --version 8.17.13     -y"
 Write-Host "  choco install git               --version 2.44.0      -y"
