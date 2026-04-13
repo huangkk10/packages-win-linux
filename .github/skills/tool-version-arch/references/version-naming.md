@@ -83,6 +83,18 @@ tools:
     version: 26100.0.0
     install_dir: C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit
     binaries: [wpr.exe, wpa.exe, xbootmgr.exe]
+
+  git:
+    version: 2.44.0
+    install_dir: C:\\tools\\git
+
+  net-7-sdk:
+    version: 7.0.410
+    install_dir: C:\\tools\\net_7_sdk
+
+  playwright-browsers:
+    version: 1.58.0
+    install_dir: C:\\tools\\playwright-browsers
 ```
 
 ## tools.yaml（per test case）

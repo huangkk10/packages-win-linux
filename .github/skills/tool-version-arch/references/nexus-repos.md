@@ -19,11 +19,15 @@
 |-----------|------|------------|------|
 | `choco-hosted` | NuGet | default（本機） | .nupkg 主倉庫 |
 | `choco-hosted-nas` | NuGet | nas-blob（NAS） | .nupkg NAS 版（大容量） |
-| `raw-windows-tools` | Raw | default | 舊版 zip 上傳（已棄用） |
+| `raw-windows-tools` | Raw | default | 工具 binary zip（Nexus fallback 下載來源） |
 | `raw-linux-tools` | Raw | default | Linux binary（待用） |
 | `raw-linux-tools-nas` | Raw | nas-blob | Linux binary NAS 版（待用） |
 
-**目前使用：`choco-hosted`（Windows 工具主要倉庫）**
+**目前使用：`choco-hosted`（nupkg）、`raw-windows-tools`（binary zip）**
+
+> **Nexus 3.77 重要限制**：NuGet v2 OData `Packages()` endpoint 已完全移除。
+> `choco install` 必須加 `--version`，否則 Chocolatey 查詢最新版時會得到 HTTP 400。
+> `choco source` 和 `choco search` 的 URL 必須加 `/index.json` 使用 v3 endpoint。
 
 ## Blob Store
 
@@ -96,8 +100,9 @@ choco install smicli `
 ### 直接從 Nexus
 
 ```powershell
+# 必須加 --version（Nexus 3.77+ 不支援 v2 OData 自動搜尋最新版）
 choco install smicli `
-  --source "https://nexus.internal/repository/choco-hosted" `
+  --source "https://nexus.internal/repository/choco-hosted/index.json" `
   --version 2026.2.13 `
   -y --no-progress
 ```
@@ -113,7 +118,10 @@ cd C:\ssd-testkit
 ## 查詢已上傳套件
 
 ```bash
-# 列出 choco-hosted 所有套件
+# choco search（--version 非必要，search 走 v3 可正常運作）
+choco search --source "https://nexus.internal/repository/choco-hosted/index.json" --all-versions
+
+# 列出 choco-hosted 所有套件（REST API）
 curl -sk -u "admin:1.a" \
   "https://127.0.0.1/service/rest/v1/components?repository=choco-hosted" | \
   python3 -c "
@@ -123,6 +131,25 @@ for i in sorted(d['items'], key=lambda x: x['name']):
     print(f\"{i['name']:20s} {i['version']}\")
 "
 ```
+
+## raw-windows-tools 現有內容（2026-04-13）
+
+```
+/BurnIn/10.2.1004/BurnIn-10.2.1004.zip
+/CrystalDiskInfo/8.17.13/CrystalDiskInfo-8.17.13.zip
+/PHM/4.22.0/PHM-V4.22.0.zip
+/PlaywrightBrowsers/1.58.0/playwright-browsers-1.58.0.zip
+/SmiCli/v20260213C/SmiCli-v20260213C.zip
+/SmiWinTools/v20260213B/SmiWinTools-v20260213B.zip
+/SmiWinTools/v20260213C/SmiWinTools-v20260213C.zip
+/WindowsADK/26100/WindowsADK-26100.0.0.zip
+/git/2.44.0/git-2.44.0.zip
+/net_7_sdk/7.0.410/net-7-sdk-7.0.410.zip
+```
+
+上傳腳本：`scripts/upload/upload_tools_zip.sh`（Linux，從 NAS 讀取 zip 上傳）
+
+---
 
 ## choco pack（打包 .nupkg）
 

@@ -66,13 +66,15 @@ bin\chocolatey\packages\
 9. 更新 `lib\testtool\tools-registry.yaml` 的 `version` 欄位
 10. 更新 `packages.config` 版本號 → git commit
 
-### 安裝工具（test case 執行前）
+### 安裝工具（任意 PC，無 ssd-testkit）
 
 ```powershell
-cd C:\ssd-testkit
-.\tool-manager\prepare_testcase.bat
-# 或指定 testcase：
-.\tool-manager\prepare_testcase.ps1 stc1685_burnin
+# Bootstrap（第一次）
+Set-ExecutionPolicy Bypass -Scope Process -Force; iwr http://10.252.170.171/b -UseBasicParsing | iex
+
+# 安裝工具（必須加 --version，Nexus 3.77+ 不支援 v2 OData 自動搜尋最新版）
+choco install cdi --version 8.17.13 -y
+choco install windows-adk --version 26100.0.0 -y
 ```
 
 ### 上傳到 Nexus
