@@ -46,7 +46,7 @@ if (-not (Select-String -Path $hostsFile -Pattern ([regex]::Escape($NexusHost)) 
 
 $NexusUrl   = "https://$NexusIp"
 $base       = "$NexusUrl/repository/$Repo"
-$tmp        = "$env:TEMP\choco-bootstrap"
+$tmp        = "$($(Get-Item $env:TEMP).FullName)\choco-bootstrap"
 $nupkg      = "$tmp\chocolatey.nupkg"
 $extractDir = "$tmp\choco-extracted"
 $certFile   = "$tmp\nexus.crt"
